@@ -36,13 +36,15 @@ jobs:
         run: |
           docker pull ${{ inputs.source_image }}:${{ inputs.tag }}
 
-      - name: 设置Docker镜像的标记名为小写
-        run: echo "IMAGE_NAME_LOWER=$(echo '${{ inputs.dockerhub_image }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: 设置镜像名称和用户名为小写
+        run: |
+          echo "IMAGE_NAME_LOWER=$(echo '${{ inputs.dockerhub_image }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "ACTOR_LOWER=$(echo '${{ github.actor }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: 为DockerHub标记镜像
         run: |
-          docker tag ${{ inputs.source_image }}:${{ inputs.tag }} ${{ env.DOCKERHUB_REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ inputs.tag }}
+          docker tag ${{ inputs.source_image }}:${{ inputs.tag }} ${{ env.DOCKERHUB_REGISTRY }}/${{ env.ACTOR_LOWER }}/${{ env.IMAGE_NAME_LOWER }}:${{ inputs.tag }}
       
       - name: 将镜像推送到DockerHub
         run: |
-          docker push ${{ env.DOCKERHUB_REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ inputs.tag }}
+          docker push ${{ env.DOCKERHUB_REGISTRY }}/${{ env.ACTOR_LOWER }}/${{ env.IMAGE_NAME_LOWER }}:${{ inputs.tag }}
