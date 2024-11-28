@@ -1,0 +1,40 @@
+name: 同步镜像到DockerHub
+
+permissions: write-all        
+
+on:
+  schedule:
+    - cron: '30 19 * * *'
+  workflow_dispatch:
+
+env:
+  SOURCE_IMAGE: ${{ secrets.SOURCE_IMAGE }}
+  TAG: latest
+  DOCKERHUB_REGISTRY: docker.io
+  DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_IMAGE }}
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 登录到DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }} 
+
+      - name: 从源仓库拉取镜像
+        run: |
+          docker pull ${{ env.SOURCE_IMAGE }}:${{ env.TAG }}
+
+      - name: 设置镜像名称为小写
+        run: echo "IMAGE_NAME_LOWER=$(echo '${{ env.DOCKERHUB_IMAGE }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: 为DockerHub标记镜像
+        run: |
+          docker tag ${{ env.SOURCE_IMAGE }}:${{ env.TAG }} ${{ env.DOCKERHUB_REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_LOWER }}:${{ env.TAG }}
+      
+      - name: 将镜像推送到DockerHub
+        run: |
+          docker push ${{ env.DOCKERHUB_REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_LOWER }}:${{ env.TAG }}
