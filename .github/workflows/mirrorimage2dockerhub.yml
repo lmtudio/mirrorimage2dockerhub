@@ -41,8 +41,8 @@ jobs:
 
       - name: 为DockerHub标记镜像
         run: |
-          docker tag ${{ inputs.source_image }}:${{ inputs.tag }} ${{ env.DOCKERHUB_REGISTRY }}/${{ IMAGE_NAME_LOWER }}:${{ inputs.tag }}
+          docker tag ${{ inputs.source_image }}:${{ inputs.tag }} ${{ env.DOCKERHUB_REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ inputs.tag }}
       
       - name: 将镜像推送到DockerHub
         run: |
-          docker push ${{ env.DOCKERHUB_REGISTRY }}/${{ IMAGE_NAME_LOWER }}:${{ inputs.tag }}
+          docker push ${{ env.DOCKERHUB_REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ inputs.tag }}
