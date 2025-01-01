@@ -12,12 +12,23 @@ env:
   TAG: latest
   DOCKERHUB_REGISTRY: docker.io
   DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_IMAGE }}
+  TZ: Asia/Shanghai
 
 jobs:
   mirror:
     runs-on: ubuntu-latest
 
     steps:
+      - name: 检测仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 配置git
+        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
       - name: 登录到DockerHub
         uses: docker/login-action@v3
         with:
@@ -38,3 +49,185 @@ jobs:
       - name: 将镜像推送到DockerHub
         run: |
           docker push ${{ env.DOCKERHUB_REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_LOWER }}:${{ env.TAG }}
+
+      - name: 生成同步日志
+        run: |
+          mkdir -p docs
+          export TZ=Asia/Shanghai
+          START_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+          cat > docs/sync_log_$(date '+%Y%m%d').html << EOF
+          <!DOCTYPE html>
+          <html lang="zh-CN">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>镜像同步日志 - $(date '+%Y-%m-%d')</title>
+              <style>
+                  body { 
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                      margin: 0;
+                      padding: 20px;
+                      color: #333;
+                      line-height: 1.6;
+                      background-color: #f5f5f5;
+                  }
+                  .container {
+                      max-width: 800px;
+                      margin: 0 auto;
+                      background: #fff;
+                      padding: 30px;
+                      border-radius: 10px;
+                      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                  }
+                  h1 {
+                      color: #2c3e50;
+                      text-align: center;
+                      margin-bottom: 30px;
+                      padding-bottom: 10px;
+                      border-bottom: 2px solid #eee;
+                  }
+                  .log-entry {
+                      background: #f8f9fa;
+                      padding: 20px;
+                      margin: 15px 0;
+                      border-radius: 8px;
+                      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                  }
+                  .log-entry p {
+                      margin: 10px 0;
+                  }
+                  .success { color: #28a745; }
+                  .timestamp { color: #666; }
+                  .footer {
+                      text-align: center;
+                      margin-top: 30px;
+                      padding-top: 20px;
+                      border-top: 1px solid #eee;
+                      color: #666;
+                  }
+                  .footer a {
+                      color: #0366d6;
+                      text-decoration: none;
+                  }
+                  .footer a:hover {
+                      text-decoration: underline;
+                  }
+                  @media (max-width: 600px) {
+                      body { padding: 10px; }
+                      .container { padding: 15px; }
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>镜像同步日志</h1>
+                  <div class="log-entry">
+                      <p><strong>同步时间:</strong> <span class="timestamp">${START_TIME}</span></p>
+                      <p><strong>触发事件:</strong> ${GITHUB_EVENT_NAME}</p>
+                      <p><strong>工作流程:</strong> <a href="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" target="_blank">查看详情</a></p>
+                      <p><strong>状态:</strong> <span class="success">✓ 成功</span></p>
+                  </div>
+                  <div class="footer">
+                      <p><a href="https://linux.do" target="_blank">LINUX DO</a></p>
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+
+          if [ ! -f docs/index.html ]; then
+            cat > docs/index.html << EOF
+          <!DOCTYPE html>
+          <html lang="zh-CN">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>镜像同步日志索引</title>
+              <style>
+                  body { 
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                      margin: 0;
+                      padding: 20px;
+                      color: #333;
+                      line-height: 1.6;
+                      background-color: #f5f5f5;
+                  }
+                  .container {
+                      max-width: 800px;
+                      margin: 0 auto;
+                      background: #fff;
+                      padding: 30px;
+                      border-radius: 10px;
+                      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                  }
+                  h1 {
+                      color: #2c3e50;
+                      text-align: center;
+                      margin-bottom: 30px;
+                      padding-bottom: 10px;
+                      border-bottom: 2px solid #eee;
+                  }
+                  .log-list {
+                      list-style: none;
+                      padding: 0;
+                  }
+                  .log-list li {
+                      margin: 10px 0;
+                      padding: 15px;
+                      background: #f8f9fa;
+                      border-radius: 8px;
+                      transition: all 0.3s ease;
+                  }
+                  .log-list li:hover {
+                      background: #e9ecef;
+                      transform: translateX(5px);
+                  }
+                  .log-list a {
+                      text-decoration: none;
+                      color: #0366d6;
+                      display: block;
+                  }
+                  .footer {
+                      text-align: center;
+                      margin-top: 30px;
+                      padding-top: 20px;
+                      border-top: 1px solid #eee;
+                      color: #666;
+                  }
+                  .footer a {
+                      color: #0366d6;
+                      text-decoration: none;
+                  }
+                  .footer a:hover {
+                      text-decoration: underline;
+                  }
+                  @media (max-width: 600px) {
+                      body { padding: 10px; }
+                      .container { padding: 15px; }
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>镜像同步日志索引</h1>
+                  <ul class="log-list">
+          EOF
+          fi
+
+          sed -i "/<ul class=\"log-list\">/a \        <li><a href=\"sync_log_$(date '+%Y%m%d').html\">$(date '+%Y-%m-%d') 同步日志</a></li>" docs/index.html
+
+          if ! grep -q "</body>" docs/index.html; then
+            echo "                  </ul>" >> docs/index.html
+            echo "                  <div class=\"footer\">" >> docs/index.html
+            echo "                      <p><a href=\"https://linux.do\" target="_blank">LINUX DO</a></p>" >> docs/index.html
+            echo "                  </div>" >> docs/index.html
+            echo "              </div>" >> docs/index.html
+            echo "          </body>" >> docs/index.html
+            echo "          </html>" >> docs/index.html
+          fi
+
+      - name: 提交同步日志
+        run: |
+          git add docs/
+          git commit -m "Update sync logs [skip ci]" || echo "No changes to commit"
+          git push origin ${GITHUB_REF_NAME}
